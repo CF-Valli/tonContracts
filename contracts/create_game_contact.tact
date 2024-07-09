@@ -22,6 +22,10 @@ struct CreateGameRequest {
             gameDurationSeconds: Int as uint256;
         }
 
+struct TestStructure {
+    data1: Int as uint256;
+    data2: Int as uint256;
+}
   
 
 message CreateGameList {
@@ -39,17 +43,10 @@ message SetTestData {
 }
 
 
-message OnGameContractDeployed {
-    contractAddress: Address;
-    transaction_by: Address;
+message SetStructureToMap {
+    data1: Int as uint256;
+    data2: TestStructure;
 }
-
-message OnGameCreated {
-    gameId: Int as uint256;
-    createdAt: Int as uint256;
-    transaction_by: Address;
-}
-
 
 message SetMap{
     gameId: Int as uint256;
@@ -67,15 +64,20 @@ contract CreateGameContact with Deployable, Ownable {
      
     gameList: map<Int as uint256, GameData>;
     testData: map<Int as uint256,Int as uint256>;
+    testStruct: map<Int as uint256, TestStructure>;
     testMap: map<Int as uint256, GameData>;
 
     init() {
         self.owner = sender();
-        emit(OnGameContractDeployed{contractAddress: myAddress(),transaction_by: sender()}.toCell());
+        // emit(OnGameContractDeployed{contractAddress: myAddress(),transaction_by: sender()}.toCell());
     }
 
     receive(msg: SetTestData) {
         self.testData.set(msg.value1, msg.value2);
+    }
+
+    receive(msg: SetStructureToMap) {
+        self.testStruct.set(msg.data1,msg.data2);
     }
 
      receive(msg: CreateGameList) {
@@ -129,9 +131,13 @@ contract CreateGameContact with Deployable, Ownable {
     }
 
     get fun TestMapFn(gameId: Int): GameData? {
-        let temp: GameData = self.testMap.get(gameId);
-        self.reply("TestMapFn".asComment())
+        let temp: GameData? = self.testMap.get(gameId);
+        self.reply("TestMapFn".asComment());
         return temp!!;
+    }
+
+    get fun TestStructureFn(key: Int): TestStructure? {
+        return self.testStruct.get(key);
     }
 
 }
