@@ -6,9 +6,12 @@
         "build": "blueprint build",
         "test": "jest --verbose",
         "lab": "blueprint build CreateGameContact && yarn test -t plays",
-        "build-game": "npx blueprint build CreateGameContact",
-        "deploy-game": "npx blueprint run deployCreateGameContact --testnet --tonconnect",
-        "deploy":"npm run build-game && npm run deploy-game"
+        "build-game:create": "npx blueprint build CreateGameContact",
+        "deploy-game:create": "npx blueprint run deployCreateGameContact --testnet --tonconnect",
+        "build-game": "npx blueprint build CfGameContract",
+        "deploy-game": "npx blueprint run deployCfGameContract --testnet --tonconnect",
+        "deploy:create": "npm run build-game:create && npm run deploy-game:create",
+        "deploy": "npm run build-game && npm run deploy-game"
     },
     "devDependencies": {
         "@ton/blueprint": "^0.21.0",

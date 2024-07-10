@@ -107,7 +107,8 @@ contract CfGameContract with Deployable, Ownable {
 
     fun createGame(gameData: CreateGameRequest) {
         self.requireOwner();
-        let game = GameData {
+        self.gameList.set(gameData.gameId, 
+        GameData {
         gameOwnerAddress: sender(),
         activePlayerCount: 0,
         totalSpots: gameData.totalSpots,
@@ -119,8 +120,7 @@ contract CfGameContract with Deployable, Ownable {
         createdAt: now(),
         startedAt: 0,
         completedAt: 0
-        };
-        self.gameList.set(gameData.gameId, game);
+        });
       //  emit(OnGameCreated{gameId: gameData.gameId,createdAt:game.createdAt,transaction_by:game.gameOwnerAddress}.toCell());
     }
 
@@ -128,11 +128,13 @@ contract CfGameContract with Deployable, Ownable {
     fun StartGame(gameId: Int) {
         self.requireOwner();
         let gameData: GameData? = self.gameList.get(gameId);
-        if(gameData != null) {
+        require(gameData != null,"Invalid Game Id");
         let tempData: GameData = gameData!!;
          require(tempData.gameStatus == self.GameListed, "Invalid Status");
         require(tempData.activePlayerCount > 1, "No Players Present In Game");
-        let newGameData = GameData {
+        let startedAt: Int = now();
+        self.gameList.set(gameId, 
+        GameData {
             gameOwnerAddress: tempData.gameOwnerAddress,
             activePlayerCount: tempData.activePlayerCount,
             totalSpots: tempData.totalSpots,
@@ -142,25 +144,25 @@ contract CfGameContract with Deployable, Ownable {
             gameDurationSeconds: tempData.gameDurationSeconds,
             activePlayers: tempData.activePlayers,
             createdAt: tempData.createdAt,
-            startedAt: now(),
+            startedAt: startedAt,
             completedAt: tempData.completedAt
-        };
-
-        self.gameList.set(gameId, newGameData);
-        emit(OnGameStarted{gameId: gameId,startedAt:newGameData.startedAt,transaction_by:newGameData.gameOwnerAddress}.toCell());
-        }
+        });
+        emit(OnGameStarted{gameId: gameId,startedAt:startedAt,transaction_by:tempData.gameOwnerAddress}.toCell());
+        
 
     }
 
      fun EndGame(gameId: Int) {
 
-         self.requireOwner();
+        self.requireOwner();
         let gameData: GameData? = self.gameList.get(gameId);
-        if(gameData != null) {
+        require(gameData != null,"Invalid Game Id");
         let tempData: GameData = gameData!!;
         require(tempData.gameStatus == self.GameLive, "Invalid Status");
         require(now() - tempData.startedAt > tempData.gameDurationSeconds, "Game is still in progress");
-         let newGameData = GameData {
+        let completedAt: Int =now();
+        self.gameList.set(gameId, 
+        GameData {
             gameOwnerAddress: tempData.gameOwnerAddress,
             activePlayerCount: tempData.activePlayerCount,
             totalSpots: tempData.totalSpots,
@@ -171,125 +173,138 @@ contract CfGameContract with Deployable, Ownable {
             activePlayers: tempData.activePlayers,
             createdAt: tempData.createdAt,
             startedAt: tempData.startedAt,
-            completedAt: now()
-        };
-
-        self.gameList.set(gameId, newGameData);
-        emit(OnGameEnded{gameId: gameId,completedAt:newGameData.completedAt,transaction_by:newGameData.gameOwnerAddress}.toCell());
-        }
-
+            completedAt: completedAt
+        });
+        emit(OnGameEnded{gameId: gameId,completedAt:completedAt,transaction_by:tempData.gameOwnerAddress}.toCell());
 
      }
 
 
      fun CancelGame(gameId: Int) {
-
         self.requireOwner();
         let gameData: GameData? = self.gameList.get(gameId);
-        if(gameData != null) {
-            let tempData: GameData = gameData!!;
-            require(tempData.gameStatus == self.GameListed, "Invalid Status");
-            let newGameData = GameData {
-                gameOwnerAddress: tempData.gameOwnerAddress,
-                activePlayerCount: tempData.activePlayerCount,
-                totalSpots: tempData.totalSpots,
-                totalRewardPool: tempData.totalRewardPool,
-                entryFee: tempData.entryFee,
-                gameStatus: self.GameCancelled,
-                gameDurationSeconds: tempData.gameDurationSeconds,
-                activePlayers: tempData.activePlayers,
-                createdAt: tempData.createdAt,
-                startedAt: tempData.startedAt,
-                completedAt: tempData.completedAt
-        };
-
-        self.gameList.set(gameId, newGameData);
-        emit(OnGameCancelled{gameId: gameId,transaction_by:newGameData.gameOwnerAddress}.toCell());
-        }
-
-
+        require(gameData != null,"Invalid Game Id");        
+        let tempData: GameData = gameData!!;
+        require(tempData.gameStatus == self.GameListed, "Invalid Status");
+        self.gameList.set(gameId, 
+        GameData {
+            gameOwnerAddress: tempData.gameOwnerAddress,
+            activePlayerCount: tempData.activePlayerCount,
+            totalSpots: tempData.totalSpots,
+            totalRewardPool: tempData.totalRewardPool,
+            entryFee: tempData.entryFee,
+            gameStatus: self.GameCancelled,
+            gameDurationSeconds: tempData.gameDurationSeconds,
+            activePlayers: tempData.activePlayers,
+            createdAt: tempData.createdAt,
+            startedAt: tempData.startedAt,
+            completedAt: tempData.completedAt
+        });
+        emit(OnGameCancelled{gameId: gameId,transaction_by:tempData.gameOwnerAddress}.toCell());
      }
 
     receive(msg: CreateGameList) {
         self.requireOwner();
-        let i: Int = 1;
-        repeat(msg.gameCount) {
-            let tempGameData: CreateGameRequest? = msg.gameListData.get(i);
-            if(tempGameData != null) {
-                self.createGame(tempGameData!!);
-            }
-            i = i + 1;
+        // let i: Int = 1;
+        foreach (key, value in msg.gameListData) {
+            let request: CreateGameRequest? = value;
+            self.createGame(request!!);
         }
+        // repeat(msg.gameListData.size) {
+        //     let tempGameData: CreateGameRequest? = msg.gameListData.get(i);
+        //     if(tempGameData != null) {
+        //         self.createGame(tempGameData!!);
+        //     }
+        //     i = i + 1;
+        // }
     }
 
     receive(msg: StartGameList) {
         self.requireOwner();
-        let i: Int = 1;
-        repeat(msg.gameCount) {
-            let tempGameId: Int? = msg.gameIds.get(i);
-            self.StartGame(tempGameId!!);
-            i = i + 1;
+        // let i: Int = 1;
+        foreach (key, value in msg.gameIds) {
+            let request: Int? = value;
+            self.StartGame(request!!);
         }
+        // repeat(msg.gameCount) {
+        //     let tempGameId: Int? = msg.gameIds.get(i);
+        //     self.StartGame(tempGameId!!);
+        //     i = i + 1;
+        // }
 
     }    
 
     receive (msg: EndGameList) {
         self.requireOwner();
-        let i: Int = 1;
-        repeat(msg.gameCount) {
-            let tempGameId: Int? = msg.gameIds.get(i);
+        // let i: Int = 1;
+        foreach(key, value in msg.gameIds){
+            let tempGameId: Int? = value;
             self.StartGame(tempGameId!!);
-            i = i + 1;
         }
+        // repeat(msg.gameCount) {
+        //     let tempGameId: Int? = msg.gameIds.get(i);
+        //     self.StartGame(tempGameId!!);
+        //     i = i + 1;
+        // }
     }
 
 
     receive(msg: CancelGameList) {
         self.requireOwner();
-        let i: Int = 1;
-        repeat(msg.gameCount) {
-            let tempGameId: Int? = msg.gameIds.get(i);
+        // let i: Int = 1;
+        foreach(key, value in msg.gameIds){
+            let tempGameId: Int?=value;
             self.CancelGame(tempGameId!!);
-            i = i + 1;
         }
+        // repeat(msg.gameCount) {
+        //     let tempGameId: Int? = msg.gameIds.get(i);
+        //     self.CancelGame(tempGameId!!);
+        //     i = i + 1;
+        // }
     }
 
      receive(msg: JoinGame) {
 
         let gameData: GameData? = self.gameList.get(msg.gameId);
-        if(gameData != null) {
-            let tempGameData = gameData!!;
-            require(tempGameData.gameStatus == self.GameListed, "The game is not listed for joining");
-            require(tempGameData.activePlayerCount < tempGameData.totalSpots, "The player count reached!");
-            require(tempGameData.activePlayers.get(sender()) == null, "The player Already Joined!");
-            let playerList: map<Address, Int as uint256> = tempGameData.activePlayers;
-            playerList.set(sender(), now());
+        require(gameData != null,"Invalid Game Id");
+        let tempGameData = gameData!!;
+        require(tempGameData.gameStatus == self.GameListed, "The game is not listed for joining");
+        require(tempGameData.activePlayerCount < tempGameData.totalSpots, "The player count reached!");
+        require(tempGameData.activePlayers.get(sender()) == null, "The player Already Joined!");
+        let playerList: map<Address, Int as uint256> = tempGameData.activePlayers;
+        playerList.set(sender(), now());
 
-            let newGameData = GameData {
-                gameOwnerAddress: tempGameData.gameOwnerAddress,
-                activePlayerCount: tempGameData.activePlayerCount + 1,
-                totalSpots: tempGameData.totalSpots,
-                totalRewardPool: tempGameData.totalRewardPool,
-                entryFee: tempGameData.entryFee,
-                gameStatus: tempGameData.gameStatus,
-                gameDurationSeconds: tempGameData.gameDurationSeconds,
-                activePlayers: playerList,
-                createdAt: tempGameData.createdAt,
-                startedAt: tempGameData.startedAt,
-                completedAt: tempGameData.completedAt
-            };
-
-            self.gameList.set(msg.gameId, newGameData);
-            self.reply("Joining Game .....".asComment());
-            emit(OnUserJoinedGame{gameId: msg.gameId,userAddress: sender(),joinedAt: now(),transaction_by: sender()}.toCell());
-        }       
+        self.gameList.set(msg.gameId, 
+        GameData {
+            gameOwnerAddress: tempGameData.gameOwnerAddress,
+            activePlayerCount: tempGameData.activePlayerCount + 1,
+            totalSpots: tempGameData.totalSpots,
+            totalRewardPool: tempGameData.totalRewardPool,
+            entryFee: tempGameData.entryFee,
+            gameStatus: tempGameData.gameStatus,
+            gameDurationSeconds: tempGameData.gameDurationSeconds,
+            activePlayers: playerList,
+            createdAt: tempGameData.createdAt,
+            startedAt: tempGameData.startedAt,
+            completedAt: tempGameData.completedAt
+        });
+        self.reply("Joining Game .....".asComment());
+        emit(OnUserJoinedGame{gameId: msg.gameId,userAddress: sender(),joinedAt: now(),transaction_by: sender()}.toCell());
+             
     }
 
      get fun getOwner(): Address {
         return self.owner;
     }
 
-    get fun getGameStatus(gameId: Int): GameData? {
-        return self.gameList.get(gameId);
+    get fun getGameStatus(gameId: Int): map<Int as uint256, GameData> {
+        let game: GameData?=self.gameList.get(gameId);
+        let result: map<Int as uint256, GameData>=emptyMap();
+        if(game==null){
+            result.set(gameId,null);
+        }else{
+            result.set(gameId,game);
+        }
+        return result;
     }
 }
