@@ -5,7 +5,10 @@
         "start": "blueprint run",
         "build": "blueprint build",
         "test": "jest --verbose",
-        "lab": "blueprint build CreateGameContact && yarn test -t plays"
+        "lab": "blueprint build CreateGameContact && yarn test -t plays",
+        "build-game": "npx blueprint build CreateGameContact",
+        "deploy-game": "npx blueprint run deployCreateGameContact --testnet --tonconnect",
+        "deploy":"npm run build-game && npm run deploy-game"
     },
     "devDependencies": {
         "@ton/blueprint": "^0.21.0",
