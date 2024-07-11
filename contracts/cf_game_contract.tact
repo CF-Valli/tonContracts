@@ -27,26 +27,18 @@ struct CreateGameRequest {
   
 
 message CreateGameList {
-
     gameListData: map<Int as uint32, CreateGameRequest>;
-    gameCount: Int as uint32;
 }
 message StartGameList {
-
     gameIds: map<Int as uint32, Int as uint32>;
-    gameCount: Int as uint32;
 }
 
 message EndGameList {
-
     gameIds: map<Int as uint32, Int as uint32>;
-    gameCount: Int as uint32;
 }
 
 message CancelGameList {
-
     gameIds: map<Int as uint32, Int as uint32>;
-    gameCount: Int as uint32;
 }
 
 message JoinGame {
@@ -107,6 +99,7 @@ contract CfGameContract with Deployable, Ownable {
 
     fun createGame(gameData: CreateGameRequest) {
         self.requireOwner();
+        let createdAt: Int = now();
         self.gameList.set(gameData.gameId, 
         GameData {
         gameOwnerAddress: sender(),
@@ -117,11 +110,11 @@ contract CfGameContract with Deployable, Ownable {
         gameStatus: self.GameListed,
         gameDurationSeconds: gameData.gameDurationSeconds,
         activePlayers: emptyMap(),
-        createdAt: now(),
+        createdAt: createdAt,
         startedAt: 0,
         completedAt: 0
         });
-      //  emit(OnGameCreated{gameId: gameData.gameId,createdAt:game.createdAt,transaction_by:game.gameOwnerAddress}.toCell());
+        emit(OnGameCreated{gameId: gameData.gameId,createdAt:createdAt,transaction_by:game.gameOwnerAddress}.toCell());
     }
 
 
@@ -154,9 +147,9 @@ contract CfGameContract with Deployable, Ownable {
 
      fun EndGame(gameId: Int) {
 
-        self.requireOwner();
+       self.requireOwner();
         let gameData: GameData? = self.gameList.get(gameId);
-        require(gameData != null,"Invalid Game Id");
+        require(gameData != null,"Invalid Game Id");        
         let tempData: GameData = gameData!!;
         require(tempData.gameStatus == self.GameLive, "Invalid Status");
         require(now() - tempData.startedAt > tempData.gameDurationSeconds, "Game is still in progress");
@@ -175,7 +168,7 @@ contract CfGameContract with Deployable, Ownable {
             startedAt: tempData.startedAt,
             completedAt: completedAt
         });
-        emit(OnGameEnded{gameId: gameId,completedAt:completedAt,transaction_by:tempData.gameOwnerAddress}.toCell());
+         emit(OnGameEnded{gameId: gameId,completedAt:completedAt,transaction_by:tempData.gameOwnerAddress}.toCell());
 
      }
 
@@ -205,62 +198,37 @@ contract CfGameContract with Deployable, Ownable {
 
     receive(msg: CreateGameList) {
         self.requireOwner();
-        // let i: Int = 1;
         foreach (key, value in msg.gameListData) {
             let request: CreateGameRequest? = value;
             self.createGame(request!!);
         }
-        // repeat(msg.gameListData.size) {
-        //     let tempGameData: CreateGameRequest? = msg.gameListData.get(i);
-        //     if(tempGameData != null) {
-        //         self.createGame(tempGameData!!);
-        //     }
-        //     i = i + 1;
-        // }
     }
 
     receive(msg: StartGameList) {
         self.requireOwner();
-        // let i: Int = 1;
         foreach (key, value in msg.gameIds) {
             let request: Int? = value;
             self.StartGame(request!!);
         }
-        // repeat(msg.gameCount) {
-        //     let tempGameId: Int? = msg.gameIds.get(i);
-        //     self.StartGame(tempGameId!!);
-        //     i = i + 1;
-        // }
 
     }    
 
     receive (msg: EndGameList) {
         self.requireOwner();
-        // let i: Int = 1;
         foreach(key, value in msg.gameIds){
             let tempGameId: Int? = value;
-            self.StartGame(tempGameId!!);
+            self.EndGame(tempGameId!!);
         }
-        // repeat(msg.gameCount) {
-        //     let tempGameId: Int? = msg.gameIds.get(i);
-        //     self.StartGame(tempGameId!!);
-        //     i = i + 1;
-        // }
     }
 
 
     receive(msg: CancelGameList) {
         self.requireOwner();
-        // let i: Int = 1;
         foreach(key, value in msg.gameIds){
             let tempGameId: Int?=value;
             self.CancelGame(tempGameId!!);
         }
-        // repeat(msg.gameCount) {
-        //     let tempGameId: Int? = msg.gameIds.get(i);
-        //     self.CancelGame(tempGameId!!);
-        //     i = i + 1;
-        // }
+       
     }
 
      receive(msg: JoinGame) {
