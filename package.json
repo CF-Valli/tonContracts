@@ -7,7 +7,7 @@
         "test": "jest --verbose",
         "lab": "blueprint build CreateGameContact && yarn test -t plays",
         "build-game:create": "npx blueprint build CreateGameContact",
-        "deploy-game:create": "npx blueprint run deployCreateGameContact --testnet --tonconnect",
+        "deploy-game:create": "npx blueprint run deployCreateGameContact --mainnet --tonconnect",
         "build-game": "npx blueprint build CfGameContract",
         "deploy-game": "npx blueprint run deployCfGameContract --testnet --tonconnect",
         "deploy:create": "npm run build-game:create && npm run deploy-game:create",

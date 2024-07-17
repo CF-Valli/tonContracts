@@ -80,7 +80,11 @@ message OnUserJoinedGame {
   transaction_by: Address;
 }
 
-
+struct SuccessMessage{
+    method: String;
+    gameId: Int as uint256;
+    status: String;
+}
 contract CfGameContract with Deployable, Ownable {
     owner: Address;
     
@@ -114,7 +118,8 @@ contract CfGameContract with Deployable, Ownable {
         startedAt: 0,
         completedAt: 0
         });
-        emit(OnGameCreated{gameId: gameData.gameId,createdAt:createdAt,transaction_by:game.gameOwnerAddress}.toCell());
+        self.reply("CreateGameSuccess".asComment());
+       emit(OnGameCreated{gameId: gameData.gameId,createdAt:createdAt,transaction_by:sender()}.toCell());
     }
 
 
@@ -140,6 +145,7 @@ contract CfGameContract with Deployable, Ownable {
             startedAt: startedAt,
             completedAt: tempData.completedAt
         });
+        self.reply("GameStartSuccess".asComment());
         emit(OnGameStarted{gameId: gameId,startedAt:startedAt,transaction_by:tempData.gameOwnerAddress}.toCell());
         
 
@@ -168,6 +174,7 @@ contract CfGameContract with Deployable, Ownable {
             startedAt: tempData.startedAt,
             completedAt: completedAt
         });
+        self.reply("GameEndSuccess".asComment());
          emit(OnGameEnded{gameId: gameId,completedAt:completedAt,transaction_by:tempData.gameOwnerAddress}.toCell());
 
      }
@@ -193,6 +200,7 @@ contract CfGameContract with Deployable, Ownable {
             startedAt: tempData.startedAt,
             completedAt: tempData.completedAt
         });
+        self.reply("GameCancelSuccess".asComment());
         emit(OnGameCancelled{gameId: gameId,transaction_by:tempData.gameOwnerAddress}.toCell());
      }
 
@@ -256,13 +264,17 @@ contract CfGameContract with Deployable, Ownable {
             startedAt: tempGameData.startedAt,
             completedAt: tempGameData.completedAt
         });
-        self.reply("Joining Game .....".asComment());
+        self.reply("UserJoinedGame".asComment());
         emit(OnUserJoinedGame{gameId: msg.gameId,userAddress: sender(),joinedAt: now(),transaction_by: sender()}.toCell());
              
     }
 
      get fun getOwner(): Address {
         return self.owner;
+    }
+
+    get fun ContractAddress(): Address {
+        return myAddress();
     }
 
     get fun getGameStatus(gameId: Int): map<Int as uint256, GameData> {
@@ -275,4 +287,12 @@ contract CfGameContract with Deployable, Ownable {
         }
         return result;
     }
+
+    // get fun GamePlayer(gameId: Int, playerAddress: Address): map<Address, Int as uint256> {
+    //     let game: GameData?=self.gameList.get(gameId);
+    //     let playerList: map<Address, Int as uint256> = game.activePlayers;
+    //     let playerData: Int = playerList.get(playerAddress);
+    //     let result: map<Address, Int as uint256> = emptyMap();
+    //     return result.set(playerAddress, playerData);
+    // }
 }
