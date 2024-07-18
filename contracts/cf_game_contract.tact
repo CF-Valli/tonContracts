@@ -288,11 +288,18 @@ contract CfGameContract with Deployable, Ownable {
         return result;
     }
 
-    // get fun GamePlayer(gameId: Int, playerAddress: Address): map<Address, Int as uint256> {
-    //     let game: GameData?=self.gameList.get(gameId);
-    //     let playerList: map<Address, Int as uint256> = game.activePlayers;
-    //     let playerData: Int = playerList.get(playerAddress);
-    //     let result: map<Address, Int as uint256> = emptyMap();
-    //     return result.set(playerAddress, playerData);
-    // }
+    get fun GamePlayer(gameId: Int, playerAddress: Address): map<Address, Int as uint256> {
+        let game: GameData? =self.gameList.get(gameId);
+        let result: map<Address, Int as uint256> = emptyMap();
+        if(game != null) {
+            let tempData = game!!;
+        let playerList: map<Address, Int as uint256> = tempData.activePlayers;
+        let playerData: Int? = playerList.get(playerAddress);
+         result.set(playerAddress, playerData!!);
+        }else {
+         result.set(playerAddress, null);
+
+        }
+        return result;
+    }
 }
