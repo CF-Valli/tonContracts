@@ -118,7 +118,10 @@ contract CfGameContract with Deployable, Ownable {
         startedAt: 0,
         completedAt: 0
         });
-        self.reply("CreateGameSuccess".asComment());
+        let comment: StringBuilder  = beginString();
+        comment.append("Game Created: ");
+        comment.append(gameData.gameId.toString());
+        self.reply(comment.toString().asComment());
        emit(OnGameCreated{gameId: gameData.gameId,createdAt:createdAt,transaction_by:sender()}.toCell());
     }
 
@@ -145,7 +148,10 @@ contract CfGameContract with Deployable, Ownable {
             startedAt: startedAt,
             completedAt: tempData.completedAt
         });
-        self.reply("GameStartSuccess".asComment());
+        let comment: StringBuilder  = beginString();
+        comment.append("Game Started: ");
+        comment.append(gameId.toString());
+        self.reply(comment.toString().asComment());
         emit(OnGameStarted{gameId: gameId,startedAt:startedAt,transaction_by:tempData.gameOwnerAddress}.toCell());
         
 
@@ -174,7 +180,10 @@ contract CfGameContract with Deployable, Ownable {
             startedAt: tempData.startedAt,
             completedAt: completedAt
         });
-        self.reply("GameEndSuccess".asComment());
+        let comment: StringBuilder  = beginString();
+        comment.append("Game ended: ");
+        comment.append(gameId.toString());
+        self.reply(comment.toString().asComment());
          emit(OnGameEnded{gameId: gameId,completedAt:completedAt,transaction_by:tempData.gameOwnerAddress}.toCell());
 
      }
@@ -200,7 +209,10 @@ contract CfGameContract with Deployable, Ownable {
             startedAt: tempData.startedAt,
             completedAt: tempData.completedAt
         });
-        self.reply("GameCancelSuccess".asComment());
+        let comment: StringBuilder  = beginString();
+        comment.append("Game Cancelled: ");
+        comment.append(gameId.toString());
+        self.reply(comment.toString().asComment());
         emit(OnGameCancelled{gameId: gameId,transaction_by:tempData.gameOwnerAddress}.toCell());
      }
 
@@ -264,7 +276,12 @@ contract CfGameContract with Deployable, Ownable {
             startedAt: tempGameData.startedAt,
             completedAt: tempGameData.completedAt
         });
-        self.reply("UserJoinedGame".asComment());
+        let comment: StringBuilder  = beginString();
+        comment.append("Game Joined by ");
+        comment.append(sender().toString());
+        comment.append(".Game Id: ");
+        comment.append(msg.gameId.toString());
+        self.reply(comment.toString().asComment());
         emit(OnUserJoinedGame{gameId: msg.gameId,userAddress: sender(),joinedAt: now(),transaction_by: sender()}.toCell());
              
     }
